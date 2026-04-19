@@ -226,11 +226,11 @@ app.get("/admin/stats/:admin_id", (req, res) => {
 
 app.put("/complaint/:id", (req, res) => {
     const id = req.params.id;
-    const { status, admin_id } = req.body;
+    const { status, admin_id, priority } = req.body;
 
     db.query(
-        "UPDATE complaints SET status=?, assigned_to=? WHERE complaint_id=?",
-        [status, admin_id, id],
+        "UPDATE complaints SET status=?, priority=?, assigned_to=? WHERE complaint_id=?",
+        [status, priority || null, admin_id, id],
         (err, result) => {
             if (err) return res.status(500).send(err);
 

@@ -5,7 +5,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [complaints, setComplaints] = useState([]);
   
-  const [currentView, setCurrentView] = useState(() => localStorage.getItem("view") || "home"); 
+  const [currentView, setCurrentView] = useState(() => localStorage.getItem("view") || "dashboard"); 
   const [showNewComplaintModal, setShowNewComplaintModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -70,7 +70,7 @@ function App() {
     localStorage.clear();
     setUser(null);
     setComplaints([]);
-    setCurrentView("home");
+    setCurrentView("dashboard");
   };
 
   const reloadUserProfile = async () => {
@@ -103,7 +103,7 @@ function App() {
     else if (hour < 18) greeting = "Good Afternoon";
     
     switch (currentView) {
-      case 'home': return `${greeting}, ${user?.name?.split(' ')[0] || 'there'} 👋`;
+      case 'home': return `${greeting}, ${user?.name?.split(' ')[0] || 'there'}`;
       case 'dashboard': return user?.role === 'admin' ? "Team Operations Desk" : "Your Service Requests";
       case 'profile': return "Your Profile";
       case 'feedback': return "Community Feedback";
@@ -126,31 +126,24 @@ if (!user) {
         
         <div className="nav-menu">
           <button 
-            className={`nav-item ${currentView === 'home' ? 'active' : ''}`}
-            onClick={() => setCurrentView('home')}
-          >
-            🏠 Home
-          </button>
-          
-          <button 
             className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => setCurrentView('dashboard')}
           >
-            📋 Dashboard
+            Dashboard
           </button>
           
           <button 
             className={`nav-item ${currentView === 'profile' ? 'active' : ''}`}
             onClick={() => setCurrentView('profile')}
           >
-            👤 Profile
+            Profile
           </button>
 
           <button 
             className={`nav-item ${currentView === 'feedback' ? 'active' : ''}`}
             onClick={() => setCurrentView('feedback')}
           >
-            💬 Feedback
+            Feedback
           </button>
 
           {user?.role === 'user' && (
@@ -497,7 +490,7 @@ function FeedbackView({ user, complaints }) {
                       required
                    />
                 </div>
-                <button type="submit" className="submit-btn" style={{width: 'max-content', padding: '1rem 2rem'}}>Deposit Traceable Evaluation</button>
+                <button type="submit" className="submit-btn" style={{width: 'max-content', padding: '1rem 2rem'}}>Submit Feedback</button>
              </form>
           )}
        </div>
@@ -610,20 +603,28 @@ function ProfileView({ user, complaints, reloadProfile }) {
 function DashboardView({ user, complaints, refresh }) {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  const handleStatusChange = async (e, complaintId, newStatus) => {
+  const handleUpdate = async (e, complaint, field, value) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`http://127.0.0.1:3001/complaint/${complaintId}`, {
+      const targetedAdminId = (field === 'status') 
+           ? (user.admin_id || user.user_id) 
+           : (complaint.assigned_to || null);
+           
+      const payload = {
+        status: complaint.status,
+        priority: complaint.priority,
+        admin_id: targetedAdminId
+      };
+      payload[field] = value;
+      
+      const res = await fetch(`http://127.0.0.1:3001/complaint/${complaint.complaint_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-    status: newStatus,
-    admin_id: user.admin_id || user.user_id
-})
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
-  await refresh();
-};
+        await refresh();
+      }
     } catch (err) {}
   };
 
@@ -645,13 +646,13 @@ function DashboardView({ user, complaints, refresh }) {
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-header">
-        <h1>{user.role === 'admin' ? "Team Operations Desk 👋" : "Your Service Requests 👋"}</h1>
+        <h1>{user.role === 'admin' ? "Team Operations Desk" : "Your Service Requests"}</h1>
         <p>Monitor your active tickets, collaborate, and keep things moving smoothly.</p>
       </div>
 
       {complaints.length === 0 ? (
         <div className="empty-state glass">
-          <h3>🎉 All caught up!</h3>
+          <h3>All caught up!</h3>
           <p>The queue is completely clear right now. Take a deep breath!</p>
         </div>
       ) : (
@@ -678,7 +679,7 @@ function DashboardView({ user, complaints, refresh }) {
                   </div>
                   {c.admin_name && (
                     <span className="badge assigned" style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-                      👤 Handled by: {c.admin_name}
+                      Handled by: {c.admin_name}
                     </span>
                   )}
                 </div>
@@ -689,7 +690,7 @@ function DashboardView({ user, complaints, refresh }) {
               
               {user.role === 'admin' && c.user_name && (
                 <p style={{fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                  👤 Sent from: <span style={{color: 'var(--text-muted)'}}>{c.user_name}</span>
+                  Sent from: <span style={{color: 'var(--text-muted)'}}>{c.user_name}</span>
                 </p>
               )}
               
@@ -700,16 +701,28 @@ function DashboardView({ user, complaints, refresh }) {
               </p>
               
               {user.role === 'admin' && (
-                <div className="admin-actions" style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                <div className="admin-actions" style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
                   <select 
                     className="status-select" 
                     value={c.status || 'Pending'}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => handleStatusChange(e, c.complaint_id, e.target.value)}
+                    onChange={(e) => handleUpdate(e, c, 'status', e.target.value)}
                   >
                     <option value="Pending">Pending</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Resolved">Resolved</option>
+                  </select>
+                  
+                  <select 
+                    className="status-select" 
+                    value={c.priority || 'Low'}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => handleUpdate(e, c, 'priority', e.target.value)}
+                    style={{borderColor: 'var(--primary)', color: 'var(--primary)'}}
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
                   </select>
                   
                   {(!c.assigned_to) && (
@@ -817,15 +830,17 @@ function NewComplaintModal({ user, close, refresh }) {
           category_id: categoryId,
           title,
           description,
-          priority
+          priority: "Low"
         })
       });
 
-     if (res.ok) {
-  alert("Complaint submitted successfully!");
-  await refresh();   // 🔥 ADD THIS BEFORE CLOSE
-  close();
-}
+      if (res.ok) {
+        alert("Complaint submitted successfully!");
+        await refresh();
+        close();
+      } else {
+        alert("System Error: The database rejected the submission format.");
+      }
     } catch (err) {
       alert("Server error.");
     }
@@ -852,15 +867,7 @@ function NewComplaintModal({ user, close, refresh }) {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Priority Matrix</label>
-            <select className="form-control" value={priority} onChange={e => setPriority(e.target.value)}>
-              <option value="Low">Low Priority</option>
-              <option value="Medium">Medium Priority</option>
-              <option value="High">High Priority</option>
-              <option value="Urgent">Critical / Urgent</option>
-            </select>
-          </div>
+
           <div className="form-group">
             <label>Description Details</label>
             <textarea className="form-control" rows="4" value={description} onChange={e => setDescription(e.target.value)} required />

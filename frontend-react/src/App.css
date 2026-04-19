@@ -51,9 +51,12 @@
 }
 
 .tab-btn.active {
-  background: var(--primary);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(159, 122, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
 .form-group {
@@ -82,14 +85,14 @@
 .form-control:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(159, 122, 234, 0.25);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
 }
 
 .submit-btn {
   width: 100%;
   padding: 1rem;
   background: var(--primary);
-  color: #fff;
+  color: #050505;
   border: none;
   border-radius: 8px;
   font-size: 1.125rem;
@@ -101,7 +104,7 @@
 .submit-btn:hover {
   background: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(159, 122, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
 
 /* Application Layout (Logged In) */
@@ -171,23 +174,26 @@
 }
 
 .nav-item.active {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(159, 122, 234, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
 .nav-item.raise-btn {
   background: var(--input-bg);
-  border: 1px dashed var(--primary);
-  color: var(--primary-hover);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  color: var(--primary);
   margin-top: 1.5rem;
   justify-content: center;
 }
 .nav-item.raise-btn:hover {
-  background: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(159, 122, 234, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .logout-box {
@@ -234,7 +240,7 @@
 .menu-btn {
   background: var(--primary);
   border: none;
-  color: white;
+  color: #050505;
   font-size: 1.5rem;
   margin-right: 1.5rem;
   display: flex;
@@ -243,7 +249,7 @@
   padding: 0.4rem 0.7rem;
   border-radius: 8px;
   transition: var(--transition);
-  box-shadow: 0 4px 12px rgba(159, 122, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .menu-btn:hover {
