@@ -1,0 +1,48 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Project Abstract</title>
+<style>
+  body {
+    font-family: 'Calibri', 'Arial', sans-serif;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 18pt;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 24pt;
+  }
+  h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 18pt;
+    margin-bottom: 12pt;
+  }
+  p {
+    text-align: justify;
+    margin-bottom: 12pt;
+  }
+</style>
+</head>
+<body>
+
+<h1>Design and Implementation of an Interactive, Role-Based Complaint Management System</h1>
+
+<h2>Abstract</h2>
+
+<p>
+In modern digital environments, the efficient handling and resolution of user grievances are critical for maintaining operational transparency and user trust. Traditional complaint management systems frequently suffer from stagnant user interfaces, ambiguous routing mechanisms, and isolated accountability structures. This project proposes and implements a comprehensive, dual-role Complaint Management System engineered to streamline the entire lifecycle of an active service request—from initial reporting to post-resolution evaluation.
+</p>
+
+<p>
+Developed utilizing a robust stack comprising React.js (Frontend), Node.js (Backend infrastructure), and MySQL (Relational Database schema), the system introduces a highly scalable architecture. For standard users, the platform offers a seamless, aesthetic "Glassmorphism" interface allowing them to intuitively file, categorize, and track the real-time priority and status of their active complaints. Simultaneously, the platform dynamically delegates elevated privileges to designated administrative accounts. These administrators are provided with an Operations Dashboard designed for macro-level oversight, actively granting them the ability to physically 'Claim' unresolved tickets, thereby establishing definitive accountability bounds.
+</p>
+
+<p>
+Furthermore, this system innovates on traditional resolution models by physically bonding post-resolution Feedback directly into the administrative lifecycle. Through traceable foreign-key constraints, standard users are prompted to evaluate only securely assigned and fully-resolved tickets, permanently linking their evaluations via direct trace routes directly to the solving administrator. This closed-loop visibility inherently drives performance metrics for administrators while restoring unparalleled structural trust and feedback agency to the end-users. Ultimately, the system succeeds in transforming decentralized user grievances into a measurable, secure, and actively resolvable workflow.
+</p>
+
+</body>
+</html>
