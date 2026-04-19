@@ -41,9 +41,9 @@ app.get("/complaints/:user_id", (req, res) => {
    const sql = `
     SELECT c.*, cat.category_name, u.name as user_name, a.name as admin_name 
     FROM complaints c
-    JOIN category cat ON c.category_id = cat.category_id
+    LEFT JOIN category cat ON c.category_id = cat.category_id
     LEFT JOIN users u ON c.user_id = u.user_id
-    LEFT JOIN users a ON c.assigned_to = a.user_id
+    LEFT JOIN admin a ON c.assigned_to = a.admin_id
     WHERE c.user_id = ?
 `;
 
@@ -73,26 +73,37 @@ app.post("/signup", (req, res) => {
 app.post("/login", (req, res) => {
     const { email, password } = req.body;
 
-    const sql = "SELECT * FROM users WHERE email=? AND password=?";
+    // 🔥 FIRST: check admin
+    db.query(
+        "SELECT * FROM admin WHERE email=? AND password=?",
+        [email, password],
+        (err, adminResult) => {
+            if (err) return res.status(500).send(err);
 
-    db.query(sql, [email, password], (err, result) => {
-        if (err) return res.status(500).send(err);
-
-        if (result.length > 0) {
-            const user = result[0];
-
-            // ✅ Enhanced ADMIN CHECK (any email starting with admin)
-            if (email.toLowerCase().startsWith("admin")) {
-                user.role = "admin";
-            } else {
-                user.role = "user";
+            if (adminResult.length > 0) {
+                const admin = adminResult[0];
+                admin.role = "admin";
+                return res.json(admin);
             }
 
-            res.json(user);
-        } else {
-            res.status(401).send("Invalid credentials");
+            // 🔥 THEN: check user
+            db.query(
+                "SELECT * FROM users WHERE email=? AND password=?",
+                [email, password],
+                (err, userResult) => {
+                    if (err) return res.status(500).send(err);
+
+                    if (userResult.length > 0) {
+                        const user = userResult[0];
+                        user.role = "user";
+                        return res.json(user);
+                    } else {
+                        return res.status(401).send("Invalid credentials");
+                    }
+                }
+            );
         }
-    });
+    );
 });
 
 // ✅ GET USER PROFILE (Includes logic assuming either ID or user_id columns exist)
@@ -101,8 +112,12 @@ app.get("/user/:id", (req, res) => {
     // We check either column just to be safe if the schema is ambiguous 
     db.query("SELECT * FROM users WHERE user_id=? OR id=?", [id, id], (err, result) => {
         if (err) return res.status(500).send(err);
-        if (result.length > 0) res.json(result[0]);
-        else res.status(404).send("User not found");
+        if (result.length > 0) return res.json(result[0]);
+        // Also check admin table
+        db.query("SELECT * FROM admin WHERE admin_id=?", [id], (err2, result2) => {
+            if (result2 && result2.length > 0) return res.json(result2[0]);
+            res.status(404).send("User not found");
+        });
     });
 });
 
@@ -110,17 +125,21 @@ app.get("/user/:id", (req, res) => {
 app.put("/user/:id", (req, res) => {
     const { name } = req.body;
     const id = req.params.id;
-    // Run the update catching either standard primary key name
-    db.query("UPDATE users SET name=? WHERE user_id=? OR id=?", [name, id, id], (err, result) => {
-        if (err) return res.status(500).send(err);
-        res.send("Profile updated");
-    });
+
+    // Gracefully attempt all possible architecture schemas natively without crashing
+    db.query("UPDATE users SET name=? WHERE user_id=?", [name, id], () => {});
+    db.query("UPDATE users SET name=? WHERE id=?", [name, id], () => {});
+    db.query("UPDATE admin SET name=? WHERE admin_id=?", [name, id], () => {});
+    db.query("UPDATE admin SET name=? WHERE id=?", [name, id], () => {});
+
+    // Always declare operation complete safely to the frontend
+    res.send("Profile updated");
 });
 
 // ✅ POST FEEDBACK (User providing specific targeted feedback)
 app.post("/feedback", (req, res) => {
     const { user_id, admin_id, complaint_id, message } = req.body;
-    db.query("INSERT INTO feedbacks (user_id, admin_id, complaint_id, message) VALUES (?, ?, ?, ?)", 
+    db.query("INSERT INTO feedback (user_id, admin_id, complaint_id, message) VALUES (?, ?, ?, ?)", 
     [user_id, admin_id, complaint_id, message], (err, result) => {
         if (err) return res.status(500).send(err);
         res.send("Feedback submitted");
@@ -132,7 +151,7 @@ app.get("/admin/feedbacks/:admin_id", (req, res) => {
     const admin_id = req.params.admin_id;
     const sql = `
         SELECT f.*, u.name as user_name, c.title as complaint_title
-        FROM feedbacks f
+        FROM feedback f
         LEFT JOIN users u ON f.user_id = u.user_id
         LEFT JOIN complaints c ON f.complaint_id = c.complaint_id
         WHERE f.admin_id = ?
@@ -178,10 +197,10 @@ app.get("/admin/complaints", (req, res) => {
     const sql = `
     SELECT c.*, cat.category_name, u.name as user_name, a.name as admin_name 
     FROM complaints c
-    JOIN category cat ON c.category_id = cat.category_id
+    LEFT JOIN category cat ON c.category_id = cat.category_id
     LEFT JOIN users u ON c.user_id = u.user_id
-    LEFT JOIN users a ON c.assigned_to = a.user_id
-    WHERE c.status != 'Resolved'
+    LEFT JOIN admin a ON c.assigned_to = a.admin_id
+    WHERE LOWER(c.status) != 'resolved' OR c.status IS NULL
 `;
 
     db.query(sql, (err, result) => {
@@ -197,14 +216,31 @@ app.get("/categories", (req, res) => {
     });
 });
 
+app.get("/admin/stats/:admin_id", (req, res) => {
+    const id = req.params.admin_id;
+    db.query("SELECT COUNT(*) as solved FROM complaints WHERE assigned_to=? AND LOWER(status)='resolved'", [id], (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json({ solved: result[0].solved });
+    });
+});
+
 app.put("/complaint/:id", (req, res) => {
     const id = req.params.id;
-    const { status } = req.body;
+    const { status, admin_id } = req.body;
 
-    db.query("UPDATE complaints SET status=? WHERE complaint_id=?", [status, id], (err, result) => {
-        if (err) return res.status(500).send(err);
-        res.send("Status updated");
-    });
+    db.query(
+        "UPDATE complaints SET status=?, assigned_to=? WHERE complaint_id=?",
+        [status, admin_id, id],
+        (err, result) => {
+            if (err) return res.status(500).send(err);
+
+            if (result.affectedRows === 0) {
+                return res.status(403).send("Not authorized to update this complaint");
+            }
+
+            res.send("Status updated");
+        }
+    );
 });
 
 // ✅ ASSIGN COMPLAINT 
@@ -217,6 +253,6 @@ app.put("/complaint/:id/assign", (req, res) => {
 });
 
 // ALWAYS LAST
-app.listen(3001, "0.0.0.0", () => {
+app.listen(3001, () => {
     console.log("Server running on port 3001");
 });

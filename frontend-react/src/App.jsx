@@ -5,9 +5,13 @@ function App() {
   const [user, setUser] = useState(null);
   const [complaints, setComplaints] = useState([]);
   
-  const [currentView, setCurrentView] = useState("home"); 
+  const [currentView, setCurrentView] = useState(() => localStorage.getItem("view") || "home"); 
   const [showNewComplaintModal, setShowNewComplaintModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    localStorage.setItem("view", currentView);
+  }, [currentView]);
 
   // Load User Info reliably
   useEffect(() => {
@@ -24,6 +28,7 @@ function App() {
           const userData = { 
             role: savedRole, 
             user_id: savedUserId,
+            admin_id: savedRole === 'admin' ? savedUserId : null,
             name: profileObject.name || profileObject.username || "User",
             email: profileObject.email
           };
@@ -32,7 +37,7 @@ function App() {
         })
         .catch(() => {
            const fallbackData = {
-              role: savedRole, user_id: savedUserId, 
+              role: savedRole, user_id: savedUserId, admin_id: savedRole === 'admin' ? savedUserId : null,
               name: localStorage.getItem("name") || "User", email: localStorage.getItem("email")
            };
            setUser(fallbackData);
@@ -42,23 +47,24 @@ function App() {
   }, []);
 
   const loadComplaints = async (userData) => {
-    let url = "";
-    if (userData.role === "admin") {
-      url = "http://127.0.0.1:3001/admin/complaints";
-    } else {
-      url = `http://127.0.0.1:3001/complaints/${userData.user_id}`;
-    }
+  let url = "";
 
-    try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setComplaints(data);
-      }
-    } catch (error) {
-      console.error("Failed to load complaints");
+  if (userData.role === "admin") {
+    url = "http://127.0.0.1:3001/admin/complaints";
+  } else {
+    url = `http://127.0.0.1:3001/complaints/${userData.user_id}`;
+  }
+
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      setComplaints(data);
     }
-  };
+  } catch (error) {
+    console.error("Failed to load complaints");
+  }
+};
 
   const logout = () => {
     localStorage.clear();
@@ -68,28 +74,42 @@ function App() {
   };
 
   const reloadUserProfile = async () => {
-     try {
-       const res = await fetch(`http://127.0.0.1:3001/user/${user.user_id}`);
-       if (res.ok) {
-         const profileObject = await res.json();
-         setUser(prev => ({...prev, name: profileObject.name || "User", email: profileObject.email}));
-       }
-     } catch(e) {}
-  };
+  try {
+    const res = await fetch(`http://127.0.0.1:3001/user/${user.user_id}`);
+    if (res.ok) {
+      const profile = await res.json();
 
-  if (!user) {
-    return <AuthView setUser={setUser} loadComplaints={loadComplaints} />;
+      const updatedUser = {
+        ...user,
+        name: profile.name,
+        email: profile.email
+      };
+
+      setUser(updatedUser);
+
+      // 🔥 also update localStorage
+      localStorage.setItem("name", profile.name);
+      localStorage.setItem("email", profile.email);
+    }
+  } catch (err) {
+    console.log("Profile reload failed");
   }
+};
 
   const getHeaderTitle = () => {
     switch (currentView) {
-      case 'home': return "Welcome Home";
+      case 'home': return `Welcome ${user?.name || 'User'}`;
       case 'dashboard': return "Operations Dashboard";
       case 'profile': return "Account Profile";
       case 'feedback': return "Feedback Insights";
       default: return "";
     }
   }
+
+// 🔥 ADD THIS BLOCK HERE
+if (!user) {
+  return <AuthView setUser={setUser} loadComplaints={loadComplaints} />;
+}
 
   return (
     <div className="main-layout bg-dark">
@@ -128,7 +148,7 @@ function App() {
             💬 Feedback
           </button>
 
-          {user.role === 'user' && (
+          {user?.role === 'user' && (
              <button 
                className="nav-item raise-btn"
                onClick={() => setShowNewComplaintModal(true)}
@@ -213,8 +233,8 @@ function AuthView({ setUser, loadComplaints }) {
 
         if (res.ok) {
           const userData = await res.json();
-          // Safety ID fallback mapping
-          const activeUserId = userData.user_id || userData.id;
+          // Safety ID fallback mapping perfectly mapping 'id' dynamically 
+          const activeUserId = userData.user_id || userData.admin_id || userData.id;
           
           localStorage.setItem("user_id", activeUserId);
           localStorage.setItem("role", userData.role);
@@ -222,8 +242,14 @@ function AuthView({ setUser, loadComplaints }) {
           localStorage.setItem("email", userData.email || "");
 
           userData.user_id = activeUserId;
-          setUser(userData);
-          loadComplaints(userData);
+          const cleanUser = {
+            ...userData,
+            user_id: activeUserId,
+            admin_id: userData.admin_id || (userData.role === 'admin' ? activeUserId : null)
+          };
+
+          setUser(cleanUser);
+          loadComplaints(cleanUser);
         } else {
           alert("Invalid login credentials.");
         }
@@ -317,10 +343,29 @@ function AuthView({ setUser, loadComplaints }) {
 // ==========================================
 function HomeView() {
   return (
-    <div className="home-wrapper">
-      <div className="quote-card glass">
-        <h1>Transforming Problems into Progress.</h1>
-        <p>"Your voice drives our action. Together, we resolve issues effectively and bring transparency back to your everyday life."</p>
+    <div className="home-wrapper animated-home">
+      <div className="home-hero">
+        <div className="pulse-glow"></div>
+        <h1 className="slide-fade-up">Transforming Problems into <span className="highlight-text">Progress</span></h1>
+        <p className="slide-fade-up delay-1">"Your voice drives our action. Together, we resolve issues effectively and bring transparency back to your everyday life."</p>
+      </div>
+      
+      <div className="features-grid">
+         <div className="feature-card glass slide-fade-up delay-2">
+            <div className="feature-icon">⚡</div>
+            <h3>Fast Resolution</h3>
+            <p>Issues are directly routed to the responsible administrators ensuring zero delay in operations.</p>
+         </div>
+         <div className="feature-card glass slide-fade-up delay-3">
+            <div className="feature-icon">🔒</div>
+            <h3>Secure Tracking</h3>
+            <p>Every ticket is strictly bound to your exact user identity maintaining absolute privacy and traceability.</p>
+         </div>
+         <div className="feature-card glass slide-fade-up delay-4">
+            <div className="feature-icon">💬</div>
+            <h3>Direct Feedback</h3>
+            <p>Evaluate exact performance. When an issue closes, rate the resolving Admin dynamically.</p>
+         </div>
       </div>
     </div>
   );
@@ -335,7 +380,7 @@ function FeedbackView({ user, complaints }) {
   const [adminFeedbacks, setAdminFeedbacks] = useState([]);
 
   useEffect(() => {
-    if (user.role === 'admin') {
+    if (user?.role === 'admin') {
       fetch(`http://127.0.0.1:3001/admin/feedbacks/${user.user_id}`)
         .then(res => res.json())
         .then(data => setAdminFeedbacks(data))
@@ -379,7 +424,7 @@ function FeedbackView({ user, complaints }) {
   const resolvedComplaints = complaints.filter(c => c.status && c.status.toLowerCase() === 'resolved' && c.assigned_to);
 
   // Admin View Rendering
-  if (user.role === 'admin') {
+  if (user?.role === 'admin') {
     return (
       <div className="profile-wrapper">
          <h1 style={{marginBottom: '2rem'}}>Direct Feedback Inbox</h1>
@@ -460,21 +505,40 @@ function FeedbackView({ user, complaints }) {
 // PROFILE VIEW
 // ==========================================
 function ProfileView({ user, complaints, reloadProfile }) {
+  const [adminSolved, setAdminSolved] = useState(0);
+
+  useEffect(() => {
+    if (user.role === 'admin') {
+      fetch(`http://127.0.0.1:3001/admin/stats/${user.admin_id || user.user_id}?t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => setAdminSolved(data.solved))
+        .catch(() => {});
+    }
+  }, [user]);
+
   let raised = complaints.length;
-  let solved = complaints.filter(c => c.status && c.status.toLowerCase() === 'resolved').length;
+  let solved;
+
+  if (user.role === "admin") {
+    solved = adminSolved;
+  } else {
+    solved = complaints.filter(c => c.status === "Resolved").length;
+  }
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user.name || "");
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:3001/user/${user.user_id}`, {
+      const res = await fetch(`http://127.0.0.1:3001/user/${user.user_id || user.admin_id}`, {
          method: "PUT",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({ name: editName })
       });
       if(res.ok) {
          alert("Profile successfully updated on backend.");
+         // Update localStorage immediately to prevent sync loss on browser refresh
+         localStorage.setItem("name", editName);
          await reloadProfile();
          setIsEditing(false);
       } else {
@@ -500,7 +564,7 @@ function ProfileView({ user, complaints, reloadProfile }) {
                <>
                   <h1>{user.name}</h1>
                   <p><strong>Email:</strong> {user.email}</p>
-                  <p><strong>User ID:</strong> #{user.user_id}</p>
+                  <p><strong>User ID:</strong> #{user.user_id || user.admin_id}</p>
                   <p><strong>Account Role:</strong> <span style={{textTransform: 'capitalize'}}>{user.role}</span></p>
                </>
             ) : (
@@ -548,9 +612,14 @@ function DashboardView({ user, complaints, refresh }) {
       const res = await fetch(`http://127.0.0.1:3001/complaint/${complaintId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ 
+    status: newStatus,
+    admin_id: user.admin_id || user.user_id
+})
       });
-      if (res.ok) refresh();
+      if (res.ok) {
+  await refresh();
+};
     } catch (err) {}
   };
 
@@ -560,9 +629,9 @@ function DashboardView({ user, complaints, refresh }) {
       const res = await fetch(`http://127.0.0.1:3001/complaint/${complaintId}/assign`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ admin_id: user.user_id })
+        body: JSON.stringify({ admin_id: user.admin_id || user.user_id })
       });
-      if (res.ok) refresh();
+      if (res.ok){await refresh(); } 
       else alert("Assignment request failed.");
     } catch(err) {
       alert("System communication failure for Claim action.");
@@ -583,12 +652,12 @@ function DashboardView({ user, complaints, refresh }) {
         </div>
       ) : (
         <div className="grid-container">
-          {complaints.map(c => (
+          {complaints.map((c, index) => (
             <div 
-              className="complaint-card glass" 
+              className="complaint-card glass slide-fade-up bounce-hover" 
               key={c.complaint_id} 
               onClick={() => setSelectedComplaint(c)}
-              style={{cursor: 'pointer'}}
+              style={{cursor: 'pointer', animationDelay: `${index * 0.1}s`}}
             >
               <div className="card-header">
                 <span className="card-id">#{c.complaint_id}</span>
@@ -625,7 +694,7 @@ function DashboardView({ user, complaints, refresh }) {
               </p>
               
               {user.role === 'admin' && (
-                <div className="admin-actions">
+                <div className="admin-actions" style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
                   <select 
                     className="status-select" 
                     value={c.status || 'Pending'}
@@ -638,9 +707,9 @@ function DashboardView({ user, complaints, refresh }) {
                   </select>
                   
                   {(!c.assigned_to) && (
-                    <button className="assign-btn" onClick={(e) => handleAssignToMe(e, c.complaint_id)}>
-                      Claim Task
-                    </button>
+                     <button className="assign-btn" onClick={(e) => handleAssignToMe(e, c.complaint_id)}>
+                       Claim Task
+                     </button>
                   )}
                 </div>
               )}
@@ -746,11 +815,11 @@ function NewComplaintModal({ user, close, refresh }) {
         })
       });
 
-      if (res.ok) {
-        alert("Complaint submitted successfully!");
-        close();
-        refresh();
-      }
+     if (res.ok) {
+  alert("Complaint submitted successfully!");
+  await refresh();   // 🔥 ADD THIS BEFORE CLOSE
+  close();
+}
     } catch (err) {
       alert("Server error.");
     }
