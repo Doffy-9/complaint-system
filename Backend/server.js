@@ -8,9 +8,7 @@ app.use(express.json());
 
 console.log("THIS FILE IS RUNNING");
 
-// ==========================================
-// AUTO-MIGRATIONS (Fix missing columns/tables silently)
-// ==========================================
+
 db.query("ALTER TABLE complaints ADD COLUMN assigned_to INT NULL", (err) => {
     if(err) console.log("Db Note: assigned_to column already exists, skipping patch.");
 });
@@ -25,16 +23,12 @@ db.query(`CREATE TABLE IF NOT EXISTS feedbacks (
     if(err) console.log("Failed to guarantee feedbacks table.");
 });
 
-// ==========================================
-// ROUTES
-// ==========================================
 
-// ✅ TEST ROUTE
 app.get("/test", (req, res) => {
     res.send("Test route working");
 });
 
-// ✅ GET complaints
+
 app.get("/complaints/:user_id", (req, res) => {
     const user_id = req.params.user_id;
 
@@ -73,7 +67,7 @@ app.post("/signup", (req, res) => {
 app.post("/login", (req, res) => {
     const { email, password } = req.body;
 
-    // 🔥 FIRST: check admin
+
     db.query(
         "SELECT * FROM admin WHERE email=? AND password=?",
         [email, password],
@@ -86,7 +80,7 @@ app.post("/login", (req, res) => {
                 return res.json(admin);
             }
 
-            // 🔥 THEN: check user
+
             db.query(
                 "SELECT * FROM users WHERE email=? AND password=?",
                 [email, password],
@@ -106,14 +100,11 @@ app.post("/login", (req, res) => {
     );
 });
 
-// ✅ GET USER PROFILE (Includes logic assuming either ID or user_id columns exist)
 app.get("/user/:id", (req, res) => {
     const id = req.params.id;
-    // We check either column just to be safe if the schema is ambiguous 
     db.query("SELECT * FROM users WHERE user_id=? OR id=?", [id, id], (err, result) => {
         if (err) return res.status(500).send(err);
         if (result.length > 0) return res.json(result[0]);
-        // Also check admin table
         db.query("SELECT * FROM admin WHERE admin_id=?", [id], (err2, result2) => {
             if (result2 && result2.length > 0) return res.json(result2[0]);
             res.status(404).send("User not found");
@@ -121,22 +112,18 @@ app.get("/user/:id", (req, res) => {
     });
 });
 
-// ✅ UPDATE USER PROFILE
 app.put("/user/:id", (req, res) => {
     const { name } = req.body;
     const id = req.params.id;
 
-    // Gracefully attempt all possible architecture schemas natively without crashing
     db.query("UPDATE users SET name=? WHERE user_id=?", [name, id], () => {});
     db.query("UPDATE users SET name=? WHERE id=?", [name, id], () => {});
     db.query("UPDATE admin SET name=? WHERE admin_id=?", [name, id], () => {});
     db.query("UPDATE admin SET name=? WHERE id=?", [name, id], () => {});
 
-    // Always declare operation complete safely to the frontend
     res.send("Profile updated");
 });
 
-// ✅ POST FEEDBACK (User providing specific targeted feedback)
 app.post("/feedback", (req, res) => {
     const { user_id, admin_id, complaint_id, message } = req.body;
     db.query("INSERT INTO feedback (user_id, admin_id, complaint_id, message) VALUES (?, ?, ?, ?)", 
@@ -146,7 +133,6 @@ app.post("/feedback", (req, res) => {
     });
 });
 
-// ✅ GET ADMIN FEEDBACK (Admin analyzing specifically what was sent about their solved cases)
 app.get("/admin/feedbacks/:admin_id", (req, res) => {
     const admin_id = req.params.admin_id;
     const sql = `
@@ -164,7 +150,6 @@ app.get("/admin/feedbacks/:admin_id", (req, res) => {
 });
 
 
-// ✅ POST complaint
 app.post("/complaint", (req, res) => {
     const { user_id, category_id, title, description, priority } = req.body;
 
@@ -179,7 +164,6 @@ app.post("/complaint", (req, res) => {
     });
 });
 
-// root
 app.get("/", (req, res) => {
     res.send("Backend is running");
 });
@@ -243,7 +227,6 @@ app.put("/complaint/:id", (req, res) => {
     );
 });
 
-// ✅ ASSIGN COMPLAINT 
 app.put("/complaint/:id/assign", (req, res) => {
     const { admin_id } = req.body;
     db.query("UPDATE complaints SET assigned_to=? WHERE complaint_id=?", [admin_id, req.params.id], (err, result) => {
@@ -252,7 +235,6 @@ app.put("/complaint/:id/assign", (req, res) => {
     });
 });
 
-// ALWAYS LAST
 app.listen(3001, () => {
     console.log("Server running on port 3001");
 });

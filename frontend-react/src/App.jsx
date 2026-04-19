@@ -103,7 +103,6 @@ function App() {
     else if (hour < 18) greeting = "Good Afternoon";
     
     switch (currentView) {
-      case 'home': return `${greeting}, ${user?.name?.split(' ')[0] || 'there'}`;
       case 'dashboard': return user?.role === 'admin' ? "Team Operations Desk" : "Your Service Requests";
       case 'profile': return "Your Profile";
       case 'feedback': return "Community Feedback";
@@ -118,7 +117,6 @@ if (!user) {
 
   return (
     <div className="main-layout bg-dark">
-      {/* Sidebar Navigation */}
       <aside className={`sidebar glass ${sidebarOpen ? '' : 'closed'}`}>
         <div className="brand">
           <span>Complaint Hub</span>
@@ -163,7 +161,6 @@ if (!user) {
         </div>
       </aside>
 
-      {/* Main Content Wrapper */}
       <div className="content-wrapper">
          <header className="top-header glass">
            <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -173,7 +170,6 @@ if (!user) {
          </header>
 
          <main className="content-area">
-           {currentView === 'home' && <HomeView />}
            {currentView === 'dashboard' && (
              <DashboardView 
                user={user} 
@@ -205,9 +201,6 @@ if (!user) {
   );
 }
 
-// ==========================================
-// AUTH VIEW
-// ==========================================
 function AuthView({ setUser, loadComplaints }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -336,41 +329,6 @@ function AuthView({ setUser, loadComplaints }) {
   );
 }
 
-// ==========================================
-// HOME VIEW
-// ==========================================
-function HomeView() {
-  return (
-    <div className="home-wrapper animated-home">
-      <div className="home-hero">
-        <h1 className="slide-fade-up">Transforming Problems into <span className="highlight-text">Progress</span></h1>
-        <p className="slide-fade-up delay-1">"Your voice drives our action. Together, we resolve issues effectively and bring transparency back to your everyday life."</p>
-      </div>
-      
-      <div className="features-grid">
-         <div className="feature-card glass slide-fade-up delay-2">
-            <div className="feature-icon">⚡</div>
-            <h3>Fast Resolution</h3>
-            <p>Issues are directly routed to the responsible administrators ensuring zero delay in operations.</p>
-         </div>
-         <div className="feature-card glass slide-fade-up delay-3">
-            <div className="feature-icon">🔒</div>
-            <h3>Secure Tracking</h3>
-            <p>Every ticket is strictly bound to your exact user identity maintaining absolute privacy and traceability.</p>
-         </div>
-         <div className="feature-card glass slide-fade-up delay-4">
-            <div className="feature-icon">💬</div>
-            <h3>Direct Feedback</h3>
-            <p>Evaluate exact performance. When an issue closes, rate the resolving Admin dynamically.</p>
-         </div>
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// FORMAL FEEDBACK VIEW
-// ==========================================
 function FeedbackView({ user, complaints }) {
   const [feedback, setFeedback] = useState("");
   const [selectedComplaintId, setSelectedComplaintId] = useState("");
@@ -449,7 +407,6 @@ function FeedbackView({ user, complaints }) {
     );
   }
 
-  // Standard User View Rendering
   return (
     <div className="profile-wrapper">
        <div className="profile-card glass" style={{flexDirection: 'column', alignItems: 'flex-start'}}>
@@ -498,9 +455,6 @@ function FeedbackView({ user, complaints }) {
   )
 }
 
-// ==========================================
-// PROFILE VIEW
-// ==========================================
 function ProfileView({ user, complaints, reloadProfile }) {
   const [adminSolved, setAdminSolved] = useState(0);
 
@@ -534,7 +488,6 @@ function ProfileView({ user, complaints, reloadProfile }) {
       });
       if(res.ok) {
          alert("Profile successfully updated on backend.");
-         // Update localStorage immediately to prevent sync loss on browser refresh
          localStorage.setItem("name", editName);
          await reloadProfile();
          setIsEditing(false);
@@ -597,9 +550,6 @@ function ProfileView({ user, complaints, reloadProfile }) {
   );
 }
 
-// ==========================================
-// DASHBOARD VIEW
-// ==========================================
 function DashboardView({ user, complaints, refresh }) {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
@@ -794,9 +744,6 @@ function DashboardView({ user, complaints, refresh }) {
   );
 }
 
-// ==========================================
-// RAISE COMPLAINT MODAL
-// ==========================================
 function NewComplaintModal({ user, close, refresh }) {
   const [categories, setCategories] = useState([]);
   const [title, setTitle] = useState("");
