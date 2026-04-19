@@ -97,11 +97,16 @@ function App() {
 };
 
   const getHeaderTitle = () => {
+    const hour = new Date().getHours();
+    let greeting = "Good Evening";
+    if (hour < 12) greeting = "Good Morning";
+    else if (hour < 18) greeting = "Good Afternoon";
+    
     switch (currentView) {
-      case 'home': return `Welcome ${user?.name || 'User'}`;
-      case 'dashboard': return "Operations Dashboard";
-      case 'profile': return "Account Profile";
-      case 'feedback': return "Feedback Insights";
+      case 'home': return `${greeting}, ${user?.name?.split(' ')[0] || 'there'} 👋`;
+      case 'dashboard': return user?.role === 'admin' ? "Team Operations Desk" : "Your Service Requests";
+      case 'profile': return "Your Profile";
+      case 'feedback': return "Community Feedback";
       default: return "";
     }
   }
@@ -116,7 +121,7 @@ if (!user) {
       {/* Sidebar Navigation */}
       <aside className={`sidebar glass ${sidebarOpen ? '' : 'closed'}`}>
         <div className="brand">
-          <span>ComplaintSystem</span>
+          <span>Complaint Hub</span>
         </div>
         
         <div className="nav-menu">
@@ -345,7 +350,6 @@ function HomeView() {
   return (
     <div className="home-wrapper animated-home">
       <div className="home-hero">
-        <div className="pulse-glow"></div>
         <h1 className="slide-fade-up">Transforming Problems into <span className="highlight-text">Progress</span></h1>
         <p className="slide-fade-up delay-1">"Your voice drives our action. Together, we resolve issues effectively and bring transparency back to your everyday life."</p>
       </div>
@@ -641,14 +645,14 @@ function DashboardView({ user, complaints, refresh }) {
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-header">
-        <h1>Dashboard Operations</h1>
-        <p>Monitor your active service requests and system alerts.</p>
+        <h1>{user.role === 'admin' ? "Team Operations Desk 👋" : "Your Service Requests 👋"}</h1>
+        <p>Monitor your active tickets, collaborate, and keep things moving smoothly.</p>
       </div>
 
       {complaints.length === 0 ? (
         <div className="empty-state glass">
-          <h3>No records found</h3>
-          <p>The queue is completely clear right now.</p>
+          <h3>🎉 All caught up!</h3>
+          <p>The queue is completely clear right now. Take a deep breath!</p>
         </div>
       ) : (
         <div className="grid-container">
@@ -673,7 +677,9 @@ function DashboardView({ user, complaints, refresh }) {
                     </span>
                   </div>
                   {c.admin_name && (
-                    <span className="badge assigned">Assigned: {c.admin_name}</span>
+                    <span className="badge assigned" style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                      👤 Handled by: {c.admin_name}
+                    </span>
                   )}
                 </div>
               </div>
@@ -682,8 +688,8 @@ function DashboardView({ user, complaints, refresh }) {
               {c.category_name && <p style={{fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '8px'}}>{c.category_name}</p>}
               
               {user.role === 'admin' && c.user_name && (
-                <p style={{fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '8px'}}>
-                  Reported by: <span style={{color: 'var(--text-muted)'}}>{c.user_name}</span>
+                <p style={{fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                  👤 Sent from: <span style={{color: 'var(--text-muted)'}}>{c.user_name}</span>
                 </p>
               )}
               

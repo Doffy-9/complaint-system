@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-color: #0b0f19;
-  --card-bg: rgba(20, 25, 35, 0.65);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --primary: #9f7aea;
-  --primary-hover: #b794f4;
-  --text-main: #f7fafc;
-  --text-muted: #a0aec0;
-  --input-bg: rgba(255, 255, 255, 0.05);
+  --bg-color: #0f172a;
+  --card-bg: rgba(30, 41, 59, 0.95);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --input-bg: rgba(15, 23, 42, 0.6);
   --input-border: rgba(255, 255, 255, 0.1);
-  --danger: #fc8181;
-  --success: #68d391;
-  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --glass-blur: blur(12px);
-  --transition: all 0.3s ease;
+  --danger: #ef4444;
+  --success: #10b981;
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  --glass-blur: blur(4px);
+  --transition: all 0.25s ease;
 }
 
 * {
@@ -26,10 +26,6 @@
 body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(159, 122, 234, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(104, 211, 145, 0.1), transparent 25%);
-  background-attachment: fixed;
   color: var(--text-main);
   line-height: 1.6;
   min-height: 100vh;
